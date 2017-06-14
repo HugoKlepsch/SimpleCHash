@@ -104,7 +104,4 @@ void * freeElement(Element * element, void (*freeFn)(char * key, void * data));
  *  freeFn - the function used to free each element's key and data members
  */
 void destroyTable(HashTable * table, void (*freeFn)(char * key, void * data));
-
-
-#endif
 ```
