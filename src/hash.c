@@ -9,6 +9,7 @@ int hashStr(char * string) {
 
     int accumulator = 0;
 
+    /* sum each letter of the string */
     while (*string != '\0') {
         accumulator += *string;
         string++;
@@ -78,6 +79,7 @@ void * get_hash(HashTable * table, char * key) {
 
     index = table->hashFn(key) % table->numElements;
 
+    /* if it's NULL, that means there's no element with that key */
     if (table->table[index] == NULL) {
         return NULL;
     } else {
@@ -94,6 +96,11 @@ void * get_hash(HashTable * table, char * key) {
 
 Element * makeElement(char * key, void * data) {
     Element * element = malloc(sizeof(*element));
+
+    if (!element) {
+        return NULL;
+    }
+
     element->key = key;
     element->data = data;
     element->next = NULL;
@@ -104,16 +111,23 @@ void * freeElement(Element * element, void (*freeFn)(char * key, void * data)) {
     if (element == NULL) {
         return NULL;
     }
+
     freeFn(element->key, element->data);
+
     Element * temp = element->next;
     free(element);
+
     return temp;
 }
 
 void destroyTable(HashTable * table, void (*freeFn)(char * key, void * data)) {
     int i;
+    /* for every slot */
     for (i = 0; i < table->numElements; ++i) {
+
+        /*free each element in the chain */
         Element * temp = freeElement(table->table[i], freeFn);
+
         while (temp != NULL) {
             temp = freeElement(temp, freeFn);
         }

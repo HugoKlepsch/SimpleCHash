@@ -3,43 +3,29 @@
 #include <stdlib.h>
 
 void freeFn(char * key, void * data) {
-    /* in our case key is not alloc'd */
-    free(data);
+    /* In our case neither key nor data is allocated and therefore doesn't
+     * need to be free'd */
 }
 
 int main(int argc, char ** argv) {
+    char * keys[] = {"Jupiter", "Saturn", "Uranus", "October", "Dominick"};
+    char * values[] = {
+        "Is the largest planet in our solar system.",
+        "Is a planet with rings.",
+        "Is a blue planet.",
+        "Is the 10th month of the Gregorian callendar.",
+        "Is going to read this code"};
+
     HashTable * table = initTable(400, hashStr);
 
-    int * temp;
+    int i;
+    for (i = 0; i < 5; ++i) {
+        insert_hash(table, keys[i], values[i]);
+    }
 
-    temp = malloc(sizeof(*temp));
-    *temp = 20;
-    insert_hash(table, "asdf", temp);
-
-    temp = malloc(sizeof(*temp));
-    *temp = 21;
-    insert_hash(table, "fdsa", temp);
-
-    temp = malloc(sizeof(*temp));
-    *temp = 22;
-    insert_hash(table, "asdf", temp);
-
-    temp = malloc(sizeof(*temp));
-    *temp = 23;
-    insert_hash(table, "one two three four", temp);
-
-
-    temp = get_hash(table, "asdf");
-    printf("asdf: %d\n", *temp);
-
-    temp = get_hash(table, "fdsa");
-    printf("fdsa: %d\n", *temp);
-
-    temp = get_hash(table, "asdf");
-    printf("asdf: %d\n", *temp);
-
-    temp = get_hash(table, "one two three four");
-    printf("one two three four: %d\n", *temp);
+    for (i = 0; i < 5; ++i) {
+        printf("%s: %s\n", keys[i], (char*)get_hash(table, keys[i]));
+    }
 
     destroyTable(table, freeFn);
 
