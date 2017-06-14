@@ -1,13 +1,14 @@
 #include <hash.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
-int hashStr(char * string) {
+unsigned int hashStr(char * string) {
     if (!string) {
         return EXIT_FAILURE;
     }
 
-    int accumulator = 0;
+    unsigned int accumulator = 0;
 
     /* sum each letter of the string */
     while (*string != '\0') {
@@ -17,7 +18,7 @@ int hashStr(char * string) {
     return accumulator;
 }
 
-HashTable * initTable(int size, int (*hashFn)(char * key)) {
+HashTable * initTable(int size, unsigned int (*hashFn)(char * key)) {
     HashTable * table = malloc(sizeof(*table));
 
     if (!table) {
@@ -31,11 +32,11 @@ HashTable * initTable(int size, int (*hashFn)(char * key)) {
         return NULL;
     }
 
-    table->numElements = size;
+    table->numSlots = size;
     table->hashFn = hashFn;
 
     int i;
-    for (i = 0; i < table->numElements; ++i) {
+    for (i = 0; i < table->numSlots; ++i) {
         table->table[i] = NULL;
     }
 
@@ -43,7 +44,7 @@ HashTable * initTable(int size, int (*hashFn)(char * key)) {
 }
 
 int insert_hash(HashTable * table, char * key, void * data) {
-    int index;
+    unsigned int index;
 
     /* We don't really care if the data itself is NULL because the user might
      * be storing it specifically */
@@ -51,7 +52,7 @@ int insert_hash(HashTable * table, char * key, void * data) {
         return EXIT_FAILURE;
     }
 
-    index = table->hashFn(key) % table->numElements;
+    index = table->hashFn(key) % table->numSlots;
 
     Element * elementToInsertAt = makeElement(key, data);
     /* That index will not be NULL if we had a collision.
@@ -69,7 +70,7 @@ int insert_hash(HashTable * table, char * key, void * data) {
 }
 
 void * get_hash(HashTable * table, char * key) {
-    int index;
+    unsigned int index;
 
     /* We don't really care if the data itself is NULL because the user might
      * be storing it specifically */
@@ -77,7 +78,7 @@ void * get_hash(HashTable * table, char * key) {
         return NULL;
     }
 
-    index = table->hashFn(key) % table->numElements;
+    index = table->hashFn(key) % table->numSlots;
 
     /* if it's NULL, that means there's no element with that key */
     if (table->table[index] == NULL) {
@@ -123,7 +124,7 @@ void * freeElement(Element * element, void (*freeFn)(char * key, void * data)) {
 void destroyTable(HashTable * table, void (*freeFn)(char * key, void * data)) {
     int i;
     /* for every slot */
-    for (i = 0; i < table->numElements; ++i) {
+    for (i = 0; i < table->numSlots; ++i) {
 
         /*free each element in the chain */
         Element * temp = freeElement(table->table[i], freeFn);
@@ -135,4 +136,44 @@ void destroyTable(HashTable * table, void (*freeFn)(char * key, void * data)) {
 
     free(table->table);
     free(table);
+}
+
+TableStats getTableStats(HashTable * table) {
+    TableStats stats;
+    stats.numSlots = table->numSlots;
+    stats.numElements = 0;
+    stats.numCollisions = 0;
+    stats.mostCollisions = 0;
+    stats.leastCollisions = INT_MAX;
+
+    int i;
+    for (i = 0; i < table->numSlots; ++i) {
+        Element * t = table->table[i];
+
+        if (t == NULL) {
+            stats.leastCollisions = 0;
+        } else {
+            stats.numElements += 1;
+
+            int chainLength = 0;
+
+            while (t->next != NULL) {
+                stats.numElements += 1;
+                chainLength += 1;
+
+                t = t->next;
+            }
+
+            stats.numCollisions += chainLength;
+            if (chainLength > stats.mostCollisions) {
+                stats.mostCollisions = chainLength;
+            }
+
+            if (chainLength < stats.leastCollisions) {
+                stats.leastCollisions = chainLength;
+            }
+        }
+    }
+
+    return stats;
 }

@@ -9,9 +9,17 @@ typedef struct Element {
 
 typedef struct HashTable {
     Element ** table;
-    int numElements;
-    int (*hashFn)(char * key);
+    int numSlots;
+    unsigned int (*hashFn)(char * key);
 } HashTable;
+
+typedef struct TableStats {
+    int numSlots;
+    int numElements;
+    int numCollisions;
+    int mostCollisions;
+    int leastCollisions;
+} TableStats;
 
 #define EXIT_FAILURE 0
 #define EXIT_SUCCESS 1
@@ -25,7 +33,7 @@ typedef struct HashTable {
  * OUT:
  *  The hash of the string.
  */
-int hashStr(char * string);
+unsigned int hashStr(char * string);
 
 /**
  * HashTable
@@ -37,7 +45,7 @@ int hashStr(char * string);
  * OUT:
  *  An initialized hash table
  */
-HashTable * initTable(int size, int (*hashFn)(char * key));
+HashTable * initTable(int size, unsigned int (*hashFn)(char * key));
 
 /**
  * insert_hash
@@ -93,5 +101,6 @@ void * freeElement(Element * element, void (*freeFn)(char * key, void * data));
  */
 void destroyTable(HashTable * table, void (*freeFn)(char * key, void * data));
 
+TableStats getTableStats(HashTable * table);
 
 #endif
