@@ -71,25 +71,13 @@ int insert_hash(HashTable * table, char * key, void * data) {
     index = table->hashFn(key) % table->numSlots;
 
     Element * elementToInsertAt = makeElement(key, data);
-    /* That index will not be NULL if we had a collision.
-     * We resolve collisions by chaining.
-     * The following ensures that elementToInsertAt is linked in */
-    if (table->dataStore[index] == NULL) {
-        table->dataStore[index] = elementToInsertAt;
-    } else {
-        Element * t = table->dataStore[index];
-        while (t->next != NULL) {
-            t = t->next;
-        }
-        t->next = elementToInsertAt;
-    }
+    elementToInsertAt->next = table->dataStore[index];
+    table->dataStore[index] = elementToInsertAt;
 }
 
 void * get_hash(HashTable * table, char * key) {
     unsigned int index;
 
-    /* We don't really care if the data itself is NULL because the user might
-     * be storing it specifically */
     if (!table || !key) {
         return NULL;
     }
