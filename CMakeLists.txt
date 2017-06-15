@@ -7,6 +7,8 @@ set (hashtable_VERSION_MINOR 0)
 set (CMAKE_BUILD_TYPE Debug)
 
 include_directories ("${PROJECT_BINARY_DIR}/../include")
-file (GLOB src "src/*.c")
 
-add_executable (hashtable ${src})
+add_library(simpleHash STATIC src/hash.c)
+
+add_executable (hashtable src/main.c)
+target_link_libraries(hashtable simpleHash)
