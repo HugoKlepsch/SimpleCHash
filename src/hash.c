@@ -3,19 +3,35 @@
 #include <string.h>
 #include <limits.h>
 
-unsigned int hashStr(char * string) {
-    if (!string) {
-        return EXIT_FAILURE;
-    }
-
-    unsigned int accumulator = 0;
+unsigned int simpleHashStr(char * string) {
+    unsigned int hashAddress = 0;
 
     /* sum each letter of the string */
     while (*string != '\0') {
-        accumulator += *string;
+        hashAddress += *string;
         string++;
     }
-    return accumulator;
+    return hashAddress;
+}
+
+unsigned int sdbmStringHash(char * key) {
+    unsigned int hashAddress = 0;
+    int i;
+
+    for (i = 0; key[i] != '\0'; ++i) {
+        hashAddress = key[i] + (hashAddress << 6) + (hashAddress << 16) - hashAddress;
+    }
+    return hashAddress;
+}
+
+unsigned int djb2StringHash(char * key) {
+    unsigned int hashAddress = 5381;
+    int i;
+
+    for (i = 0; key[i] != '\0'; ++i) {
+        hashAddress = ((hashAddress << 5) + hashAddress) + key[i];
+    }
+    return hashAddress;
 }
 
 HashTable * initTable(int size, unsigned int (*hashFn)(char * key)) {
@@ -25,9 +41,9 @@ HashTable * initTable(int size, unsigned int (*hashFn)(char * key)) {
         return NULL;
     }
 
-    table->table = malloc(sizeof(*table->table) * size);
+    table->dataStore = malloc(sizeof(*table->dataStore) * size);
 
-    if (!table->table) {
+    if (!table->dataStore) {
         free(table);
         return NULL;
     }
@@ -37,7 +53,7 @@ HashTable * initTable(int size, unsigned int (*hashFn)(char * key)) {
 
     int i;
     for (i = 0; i < table->numSlots; ++i) {
-        table->table[i] = NULL;
+        table->dataStore[i] = NULL;
     }
 
     return table;
@@ -58,10 +74,10 @@ int insert_hash(HashTable * table, char * key, void * data) {
     /* That index will not be NULL if we had a collision.
      * We resolve collisions by chaining.
      * The following ensures that elementToInsertAt is linked in */
-    if (table->table[index] == NULL) {
-        table->table[index] = elementToInsertAt;
+    if (table->dataStore[index] == NULL) {
+        table->dataStore[index] = elementToInsertAt;
     } else {
-        Element * t = table->table[index];
+        Element * t = table->dataStore[index];
         while (t->next != NULL) {
             t = t->next;
         }
@@ -81,10 +97,10 @@ void * get_hash(HashTable * table, char * key) {
     index = table->hashFn(key) % table->numSlots;
 
     /* if it's NULL, that means there's no element with that key */
-    if (table->table[index] == NULL) {
+    if (table->dataStore[index] == NULL) {
         return NULL;
     } else {
-        Element * t = table->table[index];
+        Element * t = table->dataStore[index];
         do {
             if (strcmp(key, t->key) == 0) {
                 return t->data;
@@ -127,14 +143,14 @@ void destroyTable(HashTable * table, void (*freeFn)(char * key, void * data)) {
     for (i = 0; i < table->numSlots; ++i) {
 
         /*free each element in the chain */
-        Element * temp = freeElement(table->table[i], freeFn);
+        Element * temp = freeElement(table->dataStore[i], freeFn);
 
         while (temp != NULL) {
             temp = freeElement(temp, freeFn);
         }
     }
 
-    free(table->table);
+    free(table->dataStore);
     free(table);
 }
 
@@ -148,7 +164,7 @@ TableStats getTableStats(HashTable * table) {
 
     int i;
     for (i = 0; i < table->numSlots; ++i) {
-        Element * t = table->table[i];
+        Element * t = table->dataStore[i];
 
         if (t == NULL) {
             stats.leastCollisions = 0;
@@ -162,6 +178,12 @@ TableStats getTableStats(HashTable * table) {
                 chainLength += 1;
 
                 t = t->next;
+            }
+
+            if (chainLength != 0) {
+                /* If there was a collision, also count the first element
+                 * as having collided */
+                chainLength += 1;
             }
 
             stats.numCollisions += chainLength;

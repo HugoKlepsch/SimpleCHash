@@ -13,7 +13,7 @@ void freeKey(char * key, void * data) {
 }
 
 int main(int argc, char ** argv) {
-    HashTable * table = initTable(400, hashStr);
+    HashTable * table = initTable(100000, djb2StringHash);
     TableStats stats;
 
     if (argc == 1) {
@@ -59,9 +59,7 @@ int main(int argc, char ** argv) {
         destroyTable(table, freeKey);
     }
 
-    printf("numSlots:\t%d\nnumElements:\t%d\nnumCollisions:\t%d\nmostCollisions:\t%d\nleastCollisions:\t%d\n",\
-            stats.numSlots, stats.numElements, stats.numCollisions,\
-            stats.mostCollisions, stats.leastCollisions);
+    printf("numSlots:\t%d\nnumElements:\t%d\nnumCollisions:\t%d\ncolisionRate\t%lf\nmostCollisions:\t%d\nleastCollisions:\t%d\n", stats.numSlots, stats.numElements, stats.numCollisions, (stats.numCollisions / (double)stats.numElements), stats.mostCollisions, stats.leastCollisions);
 
     return 0;
 }
